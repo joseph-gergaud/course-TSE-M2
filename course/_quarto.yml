@@ -20,6 +20,8 @@ format:
     css: assets/css/styles.css
     toc: true
     code-fold: true
+    grid:
+      sidebar-width: 320px
 
 
 

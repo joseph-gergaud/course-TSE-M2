@@ -1,3 +1,9 @@
+---
+title: "Neural Networks"
+page-layout: article
+jupyter: julia-1.11
+---
+
 ```{julia}
 #| echo: false
 include("activate.jl")
@@ -10,8 +16,6 @@ $$
  \newcommand{\norme}[1]{\lVert#1\rVert}
 $$
 :::
-
-# Neurol Network"
 
 ## Descent algorithm with constant rate
 

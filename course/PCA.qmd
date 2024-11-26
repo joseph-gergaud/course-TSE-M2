@@ -1,5 +1,7 @@
 ---
-title: "Principal component analysis (PCA)"
+title: "Principal Component Analysis (PCA)"
+page-layout: article
+jupyter: julia-1.11
 ---
 
 ```{julia}

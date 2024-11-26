@@ -1,3 +1,10 @@
+---
+title: "Optimization"
+page-layout: article
+jupyter: julia-1.11
+---
+
+
 ```{julia}
 #| echo: false
 include("activate.jl")
@@ -11,12 +18,10 @@ $$
 $$
 :::
 
-# Optimization
-
 ## Introduction
 
 ::: {layout-ncol=2}
-[![Pierre de Fermat](assets/images/Pierre_de_Fermat.jpg){width=300 fig-align="left"}](https://en.wikipedia.org/wiki/Pierre_de_Fermat)
+[![Pierre de Fermat](assets/images/Pierre_de_Fermat.jpg){width="200px" fig-align="left"}](https://en.wikipedia.org/wiki/Pierre_de_Fermat)
 
 - Pierre de Fermat, 1601 (Beaumont-de-Lomagne, near Montauban) -- 1665 (Castres)
 - method *maximis et minimis*

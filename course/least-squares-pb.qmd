@@ -1,3 +1,9 @@
+---
+title: "Least Squares Problem"
+page-layout: article
+jupyter: julia-1.11
+---
+
 ```{julia}
 #| echo: false
 include("activate.jl")
@@ -10,8 +16,6 @@ $$
  \newcommand{\norme}[1]{\lVert#1\rVert}
 $$
 :::
-
-# Least Squares Probem
 
 ::: {.callout-note icon=false}
 #### Example : $C^{14} Datation
