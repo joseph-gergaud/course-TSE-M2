@@ -1,0 +1,277 @@
+```{julia}
+#| echo: false
+include("activate.jl")
+```
+
+::: {.hidden}
+$$
+ \def\R{{\mathbf{R}}}
+ \newcommand{\abs}[1]{\lvert#1\rvert} 
+ \newcommand{\norme}[1]{\lVert#1\rVert}
+$$
+:::
+
+# Optimization
+
+## Introduction
+
+::: {layout-ncol=2}
+[![Pierre de Fermat](assets/images/Pierre_de_Fermat.jpg){width=300 fig-align="left"}](https://en.wikipedia.org/wiki/Pierre_de_Fermat)
+
+- Pierre de Fermat, 1601 (Beaumont-de-Lomagne, near Montauban) -- 1665 (Castres)
+- method *maximis et minimis*
+- Early developments that led to infinitesimal calculus
+:::
+
+The problem is to solve
+
+$$(P)\left\{\begin{array}{l}
+Min\; f(x)\\
+x\in\R^n
+\end{array}\right.
+$$
+
+## Automatique differentiation
+
+```{julia}
+using LinearAlgebra
+using ForwardDiff
+A = [-1 2;1 4]; b=[1,1]; c=1
+f(x) = 0.5*x'*A*x + b'*x +c
+
+analytic_∇f(x) = 0.5*(A' + A)*x+b
+analytic_∇²f(x) = 0.5*(A' + A)
+
+∇f(x) = ForwardDiff.gradient(f, x)
+∇²f(x) = ForwardDiff.hessian(f, x)
+
+x0 = [1,-1]
+println("∇f(x0) = ", ∇f(x0))
+println("analytic_∇f(x0) = ", analytic_∇f(x0))
+println("analytic_∇f(x0) - ∇f(x0) = ", analytic_∇f(x0)- ∇f(x0))
+
+println("∇²f(x0) = ", ∇²f(x0))
+println("analytic_∇²f(x0) = ", analytic_∇²f(x0))
+println("analytic_∇²f(x0) - ∇²f(x0) = ", analytic_∇²f(x0)- ∇²f(x0))
+```
+
+## Newton's Algorithm
+
+Solve $\nabla f(x) = 0$ by Newton's method
+
+**Require** $f \colon \R^n \to \R$, $x_{0} \in \R^n$ ( initial point) 
+
+* $k \gets 0$
+* continue = true
+* **While** continue $\#$ See Section @sec-criteres-arret
+    + $d_k \gets $ solution of $\nabla ^2f(x_k)\, d =-\nabla f(x\_k)$ $\#$ Newton's direction
+    + $x_{k+1} \gets x_{k} + d_{k}$  # Mise à jour de l'itéré
+    + $k \gets k + 1$
+    + continue = stop_function($\nabla f_k$,$x_k$,$x_{k+1}$,$f_k$,$f_{k+1}$,AbsTol,RelTol,$\varepsilon$)
+* **EndWhile**
+
+### Stop criteria {#sec-criteres-arret}
+| Criteria | Formula |
+| ------------------------------ |---------|
+| $\norme{\nabla f(x_{k+1})}=0$ | $\norme{\nabla f(x_{k+1})} < \mathrm{max}(\mathrm{RelTol}\norme{\nabla f(x_0)},\mathrm{AbsTol})$ |
+| Stagnation of the iterate | $\norme{x_{k+1}-x_k} < \varepsilon\mathrm{max}(\mathrm{RelTol}\norme{x_{k+1}},\mathrm{AbsTol})$ |
+| Stagnation of the function | $\abs{f(x_{k+1})-f(x_k)} < \varepsilon\mathrm{max}(\mathrm{RelTol}\abs{f(x_{k+1})},\mathrm{AbsTol})$ |
+Maximum number of iteration | $k+1 = \mathrm{max\_iter}$ | 
+
+: Stop criteria, Stagnation criteria are more restrictive ($\varepsilon = 0.01$, for example).
+
+### Exercice
+
+```{julia}
+using LinearAlgebra
+using ForwardDiff
+
+"""
+   Solve by Newton's algorithm the optimization problem Min f(x)
+   Case where f is a function from R^n to R
+"""
+
+
+function algo_Newton(f,x0::Vector{<:Real};AbsTol= abs(eps()), RelTol = abs(eps()), ε=0.01, nbit_max = 0)
+# to complete
+    
+    # flag = 0 if the program stop on the first criteria
+    # flag = 2 if the program stop on the second criteria
+    # ...
+    return xₖ, flag, fₖ, ∇fₖ , k  
+end
+```
+
+```{julia}
+include("assets/julia/MyOptims.jl")
+
+A = [1 0 ; 0 9/2]
+b = [0,0]; c=0.
+f1(x) = 0.5*x'*A*x + b'*x +c
+x0 = [1000,-20]
+println("Results for Newton on f1 : ", algo_Newton(f1,x0))
+println("eigen value of 0.5(A^T+A) = ", 0.5*eigen(A'+A).values)
+using Plots;
+x=range(-10,stop=10,length=100)
+y=range(-10,stop=10,length=100)
+f11(x,y) = f1([x,y])
+p1 = plot(x,y,f11,st=:contourf)
+
+A = [-1 0 ; 0 3]
+f2(x) = 0.5*x'*A*x + b'*x +c
+println("Results for Newton on f2 : ", algo_Newton(f2,x0))
+println("eigen value of 0.5(A^T+A) = ", 0.5*eigen(A'+A).values)
+f21(x,y) = f1([x,y])
+p2 = plot(x,y,f21,st=:contourf)
+# Rosenbrock function
+x=range(-1.5,stop=2,length=100)
+y=range(-0.5,stop=3.,length=100)
+f3(x) = (1-x[1])^2 + 100*(x[2]-x[1]^2)^2
+f31(x,y) = f3([x,y])
+p3 = plot(x,y,f31,st=:contourf)
+x0 = [1.1,1.2]
+
+println("Results for Newton on f3 : ", algo_Newton(f3,[1.1,1.2]))
+
+println("Results for Newton on f3 : ", algo_Newton(f3,[3.,0.]))
+plot(p1,p2,p3)
+```
+
+## Steepest descent
+
+### Algorithm
+
+**Require** $f \colon \R^n \to \R$, $x_{0} \in \R^n$ ( initial point) 
+
+* $k \gets 0$
+* continue = true
+* **While** continue $\#$ See Section @sec-criteres-arret
+    + $d_k = -\nabla f(x_k)$
+    + $\alpha_k = argmin_{\alpha>0}\{f(x_k+\alpha d_k)\}$
+    + $x_{k+1} \gets x_{k} + \alpha_kd_{k}$  
+    + $k \gets k + 1$
+    + continue = stop_function($\nabla f_k$,$x_k$,$x_{k+1}$,$f_k$,$f_{k+1}$,AbsTol,RelTol,$\varepsilon$)
+* **EndWhile**
+
+### Steepest descent for a quadratic function 
+
+::: {.callout-note icon=false}
+#### Exercise:
+Let
+$f(x)=x^TAx +b^Tx + c$, where $A$ symetric and positive-definite. 
+
+If $x_k$ is a fixed vector and $d_k$ a nonzero vector compute $\alpha^*$ the solution of
+$$Min\; g(\alpha)=f(x_k+\alpha d_k)$$
+:::
+
+::: {.callout-tip collapse="true" icon=false}
+#### Solution:
+$$\alpha^* = -\frac{2x_k^TAd_k + b^Td_k}{2d_k^TAd_k}$$
+:::
+
+::: {.callout-note icon=false}
+#### Exercise:
+Complete the `steepest_descent_quad` function and execute the following sript and explain why the Newton's algorithm converge in one iteration.
+:::
+
+```{julia}
+#| echo: false
+include("assets/julia/MyOptims.jl")
+using Plots
+# n = 5
+x1 = 1.; x2 = sqrt(5*9/2-x1^2);
+x = [-x2,-x1,0.,x1,x2]
+n = length(x)
+X = [ones(n)  x]
+a₁ = 1; a₀ = 2
+y = a₁*x .+ a₀ # model
+A = (1/n)*X'*X # A=[1 0 ; 0 9]
+println("A = ", A)
+b = -(2/n)*X'*y
+c = (1/n)*y'*y
+println("b = ", b)
+println("n= ",n)
+
+f(x) = x'*A*x + b'*x + c 
+xsol = -(A' + A)\b
+xx = range(-10*(n/2)-xsol[1],stop=10*(n/2)-xsol[1],length=100)
+yy = range(-9*(n/2)-xsol[2],stop=9*(n/2)-xsol[2],length=100)
+f_contour(x,y) = f([x,y])
+z = @. f_contour(xx', yy)
+nb_levels = 7
+x0 = (n/2)*[9,1]
+xₖ = x0
+Xsol = zeros(nb_levels+1,2)
+Xsol[1,:] = x0
+p1 = plot()
+for nbit in 1:nb_levels
+  xsol, flag, fsol, ∇f_xsol , nb_iter  = steepest_descent_quad(A,b,c,x0,nbit_max=nbit)
+  plot!(p1,[xₖ[1],xsol[1]],[xₖ[2],xsol[2]],arrow=true)
+  xₖ = xsol
+  Xsol[nbit+1,:] = xsol
+end
+
+levels = [f(Xsol[k,:]) for k in nb_levels+1:-1:1]
+contour!(p1,xx,yy,z,levels=levels,cbar=false,color=:turbo)
+
+
+xsol, flag, fsol, ∇f_xsol , nb_iter = algo_Newton(f,x0)
+println()
+println("Result with Newton's algorithm : ")
+println("xsol = ", xsol)
+println("flag = ", flag)
+println("fsol = ", fsol)
+println("∇f_xsol = ", ∇f_xsol)
+println("nb_iter = ", nb_iter)
+scatter!(p1,[xsol[1]],[xsol[2]])
+plot!(p1,[x0[1],xsol[1]],[x0[2],xsol[2]],arrow=true)
+plot(p1,legend=false)
+```
+
+### Linear search: Armijo's condition and backtraking
+Let $x_k$ the current iterate and $d_k=-\nabla f(x_k)$. We note $g_k(\alpha)=f(x_k+\alpha d_k)$
+We want to find an $\alpha>0$ such that we have a sufficient decay of the function $g_k$, i.e. which verify the Armijo's 
+condition : $g_f(\alpha)=f(x_k+\alpha d_k)\le f_k+c_1\alpha\nabla f_k^Td_k=\tilde{g}_f(\alpha)$
+
+* Initialization
+    -  $\alpha_0=1$ 
+    -  $\rho\in]0,1[$ ($\rho=0.8$)
+    -  $c\in]0,1[$ ($c=10^{-4}$)
+    -  $k=0$
+
+* **While** $g_{f}(\alpha_k)>\tilde{g}_f(\alpha_k)=f_k+c_1\alpha_k\nabla f_k^Td_k$
+    - $\alpha_k:=\rho\alpha_k$
+    - $k:=k+1$
+* **end**
+
+::: callout
+Exercise:
+Complete the `descent_backtrac` function and execute the following sript.
+:::
+
+```{julia}
+using Plots
+x = range(-10*(n/2)-xsol[1],stop=10*(n/2)-xsol[1],length=100)
+y = range(-9*(n/2)-xsol[2],stop=9*(n/2)-xsol[2],length=100)
+f_contour(x,y) = f([x,y])
+z = @. f_contour(x', y)
+nb_levels = 7
+x0 = (n/2)*[9,1]
+xₖ = x0
+p1 = plot()
+for nbit in 1:nb_levels
+  xsol, flag, fsol, ∇f_xsol , nb_iter  = descent_backtrac(f,x0,nbit_max=nbit)
+  #xsol, flag, fsol, ∇f_xsol , nb_iter  = my_descent(f,x0,nbit_max=nbit)
+  println("xsol = ", xsol)
+  println("flag = ", flag)
+  println("fsol = ", fsol)
+  println("∇f_xsol = ", ∇f_xsol)
+  println("nb_iter = ", nb_iter)
+  plot!(p1,[xₖ[1],xsol[1]],[xₖ[2],xsol[2]],arrow=true)
+  xₖ = xsol
+end
+levels = [f(Xsol[k,:]) for k in nb_levels+1:-1:1]
+contour!(p1,xx,yy,z,levels=levels,cbar=false,color=:turbo)
+plot(p1,legend=false)
+```
+

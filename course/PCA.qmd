@@ -1,0 +1,323 @@
+---
+title: "Principal component analysis (PCA)"
+---
+
+```{julia}
+#| echo: false
+include("activate.jl")
+```
+
+## Introduction
+
+Principal component analysis (PCA) reduces the number of dimensions in large datasets to principal components that retain most of the original information. It does this by transforming potentially correlated variables into a smaller set of uncorrelated variables, called principal components.
+
+Let $X$ the matrix $(n,p)$ of data, we note $X_c$ = the centered matrix. Then the empirical variances, covariances matrix is $C = \frac{1}{n}X_c^TX_c$. We note $\Lambda$ the vector of the eigen value (in decrease order) of the matrix $C$ and $U$ the $(p,p)$ orthogonal matrix of the eigen vectors : 
+$$C=U\texttt{diag}(\Lambda) U^T.$$
+Then We have
+
+* The coordinates of the $n$ observations in the new basis of the eigen vectors $(\vec{u}_1,\ldots,\vec{u}_p)$ are 
+$$\Psi = X_cU$$
+* The The coordinates of the $p$ variables in the new basis of the eigen vectors $(\vec{v}_1,\ldots,\vec{v}_p)$ are 
+$$\Phi = \sqrt{n}U\texttt{diag}(\sqrt{\lambda_1},\ldots,\sqrt{\lambda}_p)$$
+* The total inertia (variance) is 
+$$I = \texttt{trace}(C)=\sum_{i=1,p}\lambda_i$$
+- The variance of the variable $v_i$ is $\lambda_i$
+
+## Iris Data
+
+```{julia}
+using Plots
+using Statistics, LinearAlgebra
+using RDatasets, DataFrames
+iris = RDatasets.dataset("datasets", "iris")  # Iris Datas
+Names = names(iris)
+X = Matrix(iris[:,1:4])
+p1 = scatter(X[:,1],X[:,2], c=[:blue :red :green], group=iris.Species,xlabel = Names[1],ylabel=Names[2])
+p2 = scatter(X[:,3],X[:,4], c=[:blue :red :green], group=iris.Species,xlabel = Names[3],ylabel=Names[4])
+plot(p1,p2)
+```
+
+
+### My PCA function
+
+```{julia}
+using LinearAlgebra, Statistics
+function my_PCA(X::Matrix{<:Real};normed=false)::Tuple{Vector{<:Real},Matrix{<:Real},Matrix{<:Real},Matrix{<:Real},Real,Vector{<:Real},Matrix{<:Real}}
+"""
+    Compute the PCA of Data
+    Input
+    X : (n,p) Matrix of reals
+         n = number of observations
+         p = number of variables
+    Output
+        Λ : Vector of the p eigen value in decrease order
+        U : (p,p) Matrix of reals
+            eigen vectors in column
+        Ψ : (n,p) Matrix of reals
+            Coordinates of the observation in the new basis
+        Φ = (p,p) Matrix of reals
+             Coordinates of the variables in the new basis
+        I_total : Real
+             total inertia
+        cum_var_ratio : p vector of reals
+             cumulative variance ratio
+"""
+     n,p = size(X)
+     Λ = zeros(p); U = zeros(p,p); Ψ = zeros(n,p); Φ = zeros(p,p); I_total=0; cum_var_ratio = zeros(p)
+     # Calculation of centered data
+     xbar = mean(X,dims=1)
+     Xc = X - ones(n,1)*xbar
+     covMat = (1/n)*Xc'*Xc
+     if normed == true
+     s=std(Xc,corrected=false,dims=1)
+     Y=(Xc)./(ones(n,1)*s);
+     covMat=(1/n)*Y'*Y
+     end
+
+
+     # Computating total inertia
+     I_total = tr(covMat)
+     Λ, U = eigen(covMat)
+     eigOrder = sortperm(Λ, rev = true) # for abtaining increase order of eigen values
+     Λ = Λ[eigOrder]
+     # cumulative variance ratios
+     cum_var_ratio =  Vector{Float64}(undef,p)
+     for i in 1:p
+         cum_var_ratio[i] = sum(Λ[1:i])/I_total
+     end
+     U = U[:,eigOrder]
+     if normed == true
+       Ψ = Y*U
+       Φ = U*sqrt.(diagm(Λ))
+     else
+       Ψ = Xc*U
+       Φ = U*sqrt.(n*diagm(Λ))
+     end
+     return Λ, U, Ψ, Φ, I_total,cum_var_ratio, covMat
+end
+```
+
+### Print results
+```{julia}
+my_PCA_results = my_PCA(X)
+my_Λ, my_U, my_Ψ, my_Φ, my_I_total, my_cum_var_ratio, my_cov_mat = my_PCA_results
+println("lambda = ", my_Λ)
+println("my_U = ")
+display(my_U)
+println("my_Ψ = ")
+display(my_Ψ)
+println("my_Φ = ")
+display(my_Φ)
+println("Total inertia = ", my_I_total)
+println("my_cum_var_ratio = ", my_cum_var_ratio)
+println("Matrix of variance, covariance = ")
+display(my_cov_mat)
+```
+
+### Graph of the observations
+
+```{julia}
+p3 = scatter(my_Ψ[:,1],my_Ψ[:,2], c=[:blue :red :green], group=iris.Species,xlabel = "PC1", ylabel="PC2")
+p4 = scatter(my_Ψ[:,3],my_Ψ[:,4], c=[:blue :red :green], group=iris.Species,xlabel = "PC1", ylabel="PC2")
+plot(p3,p4)
+```
+
+
+### Graph of the variables
+```{julia}
+pvar1 = plot()
+ech = 1.1*maximum(abs.(my_Φ))
+for i=1:4
+    plot!(pvar1,[0,my_Φ[i,1]], [0,my_Φ[i,2]], xlims=(-ech,ech), ylims=(-ech,ech), arrow=true, label=Names[i], legend=:bottomleft, xlabel="v1", ylabel="v2")
+end
+
+pvar2 = plot()
+for i=1:4
+    plot!(pvar2,[0,my_Φ[i,3]], [0,my_Φ[i,4]], xlims=(-ech,ech), ylims=(-ech,ech), arrow=true, label=Names[i], legend=:bottomleft, xlabel="v3", ylabel="v4")
+end
+plot(pvar1,pvar2)
+```
+
+
+
+### With MultivariateStats package
+
+```{julia}
+using MultivariateStats
+
+model = fit(PCA, X', maxoutdim=4, pratio = 0.999)  # Each column of X is an observation
+U = projection(model)
+println("U = ")
+display(U)
+Ψ = MultivariateStats.transform(model, X')
+println("Ψ = ")
+display(Ψ)
+display(Ψ'-my_Ψ) # Each column of Ψ is an observation
+display(U-my_U)
+```
+## Normed PCA
+
+### Introduction
+
+* $X$ the matrix $(n,p)$ of data
+* $X_c$ is the centered matrix
+* $Y$ is the centered and normed matrix. Each column of $Xc$ is divided by its sample standard deviation
+* $R=Y^TY$ is the corretalion matrix of the Data $X$.
+* $$C=U\texttt{diag}(\Lambda) U^T.$$
+Then We have
+
+* The coordinates of the $n$ observations in the new basis of the eigen vectors $(\vec{u}_1,\ldots,\vec{u}_p)$ are 
+$$\Psi = YU$$
+* The The coordinates of the $p$ variables in the new basis of the eigen vectors $(\vec{v}_1,\ldots,\vec{v}_p)$ are 
+$$\Phi = U\texttt{diag}(\sqrt{\lambda_1},\ldots,\sqrt{\lambda}_p)$$
+* The total inertia (variance) is 
+$$I = \texttt{trace}(C)=\sum_{i=1,p}\lambda_i$$
+- The variance of the variable $v_i$ is $\lambda_i$
+
+
+### Data
+
+```{julia}
+# Data from Tomassone page 138 : mineral waters
+X =[341   27   3   84   23   2  
+263   23   9   91   5   3  
+287   3   5   44   24   23  
+   298   9   23   96   6   11 
+    200   15   8   70   2   4 
+    250   5   20   71   6   11 
+   357   10   2   78   24   5 
+      311   14   18   73   18   13 
+    256   6   23   86   3   18  
+   186   10   16   64   4   9 
+    183   16   44   48   11   31 
+       398   218   15   157   35   8 
+      348   51   31   140   4   14 
+   168   24   8   55   5   9 
+   110   65   5   4   1   3 
+   332   14   8   103   16   5 
+      196   18   6   58   6   13 
+       59   7   6   16   2   9 
+       402   306   15   202   36   3 
+       64   7   8   10   6   8 ]
+
+df = DataFrame(X,[:HCO3, :SO4, :Cl, :Ca, :Mg, :Na])
+df[:, :Origins] = ["Aix-les-Bains", "Beckerish",
+"Cayranne", 
+"Chambon",
+"Cristal-Roc",
+"St Cyr",
+"Evian",
+"Ferita",
+"St Hyppolite",
+"Laurier", 
+"Ogeu",
+"Ondine",
+"Perrier",
+"Ribes", 
+"Spa",
+"Thonon", 
+"Veri", 
+"Viladreau",
+"Vittel", 
+"Volvic"]
+```
+
+### Graph of the observations
+```{julia}
+my_PCA_results = my_PCA(X,normed=true)
+my_Λ, my_U, my_Ψ, my_Φ, my_I_total, my_cum_var_ratio, my_R = my_PCA_results
+p3 = scatter(my_Ψ[:,1],my_Ψ[:,2],xlabel = "PC1", ylabel="PC2")
+p4 = scatter(my_Ψ[:,3],my_Ψ[:,4], xlabel = "PC1", ylabel="PC2")
+plot(p3,p4)
+
+println(sum(my_Φ.^2,dims=1))
+println(sum(my_Φ.^2,dims=2))
+println("my_Φ*my_Φ' = ")
+display(my_Φ*my_Φ')
+println("Matrix of correlation = ")
+display(my_R)
+println("my_Φ'*my_Φ = ")
+display(my_Φ'*my_Φ)
+```
+### Graph of the variables
+
+```{julia}
+n,p = size(X)
+println("p = ", p)
+Names = names(df)
+println(Names)
+pvar1 = plot()
+ech = 1.1*maximum(abs.(my_Φ))
+for i=1:p
+    plot!(pvar1,[0,my_Φ[i,1]], [0,my_Φ[i,2]], xlims=(-ech,ech), ylims=(-ech,ech), arrow=true, label=Names[i], legend=:bottomleft, xlabel="v1", ylabel="v2")
+end
+
+# Plot the unit cercle
+cercle(θ)=[cos.(θ) sin.(θ)]
+Inter_theta = 0:0.01:2*π
+Cercle = cercle(Inter_theta)
+plot!(pvar1,Cercle[:,1],Cercle[:,2])
+
+pvar2 = plot()
+for i=1:p
+    plot!(pvar2,[0,my_Φ[i,3]], [0,my_Φ[i,4]], xlims=(-ech,ech), ylims=(-ech,ech), arrow=true, label=Names[i], legend=:bottomleft, xlabel="v3", ylabel="v4")
+end
+plot!(pvar2,Cercle[:,1],Cercle[:,2])
+plot(pvar1,pvar2,aspect_ratio=:equal)
+```
+
+## Colored Image to the best black and white
+
+### Data
+```{julia}
+using Plots
+using TestImages, Images
+img = testimage("lighthouse")
+imgarr = channelview(img)
+plot(img)
+println(imgarr[1,1:3,1:3])
+img_red = StackedView(imgarr[1,:,:], zeroarray, zeroarray)
+img2_red = colorview(RGB, img_red)
+img_green = StackedView(zeroarray,imgarr[2,:,:], zeroarray)
+img2_green = colorview(RGB, img_green)
+img_blue = StackedView(zeroarray, zeroarray,imgarr[3,:,:])
+img2_blue = colorview(RGB, img_blue)
+#permutedims(imgarr, [2,3,1])
+mosaicview(img,img2_red, img2_green, img2_blue; nrow = 2)
+```
+
+### PCA
+
+```{julia}
+X1=imgarr[1,:,:];X2=imgarr[2,:,:];X3=imgarr[3,:,:];
+nl,nc=size(X1);
+println(nl," ", nc)
+#
+# X is the matrix for the PCA
+X=[X1[:] X2[:] X3[:]];
+println(size(X))
+Λ, U, Ψ, Φ, I_total, cum_var_ratio, cov_mat = my_PCA(X)
+println("nl = ", nl)
+println("nc = ", nc)
+println(size(Ψ))
+Ψ1 = zeros(nl,nc)
+Ψ2 = zeros(nl,nc)
+Ψ3 = zeros(nl,nc)
+println(size(Ψ1))
+I=1:nl;
+for j in 1:nc
+   Ψ1[I,j] = Ψ[(j-1)*nl .+ I,1];
+   Ψ2[I,j] = Ψ[(j-1)*nl .+ I,2];
+   Ψ3[I,j] = Ψ[(j-1)*nl .+ I,3];
+end
+
+
+minΨ1=minimum(Ψ1)
+maxΨ1=maximum(Ψ1)
+PSI1=(Ψ1 .- minΨ1) ./ (maxΨ1-minΨ1)
+
+using Colors
+Gray.(PSI1)
+#@view PSI1
+
+```

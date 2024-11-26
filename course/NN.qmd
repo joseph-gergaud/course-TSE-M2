@@ -1,0 +1,114 @@
+```{julia}
+#| echo: false
+include("activate.jl")
+```
+
+::: {.hidden}
+$$
+ \def\R{{\mathbf{R}}}
+ \newcommand{\abs}[1]{\lvert#1\rvert} 
+ \newcommand{\norme}[1]{\lVert#1\rVert}
+$$
+:::
+
+# Neurol Network"
+
+## Descent algorithm with constant rate
+
+### Algorithm
+
+**Require** $f \colon \R^n \to \R$, $x_{0} \in \R^n$ ( initial point) 
+
+* $\eta = 0.1$
+* $k \gets 0$
+* continue = true
+* **While** continue 
+    + $d_k = -\nabla f(x_k)$
+    + $x_{k+1} \gets x_{k} + \eta d_{k}$  
+    + $k \gets k + 1$
+    + continue = stop_function($\nabla f_k$,$x_k$,$x_{k+1}$,$f_k$,$f_{k+1}$,AbsTol,RelTol,$\varepsilon$)
+* **EndWhile**
+
+### Application  : Simple Linear Regression
+
+```{julia}
+x1 = 1.; x2 = sqrt(5*9/2-x1^2);
+x = [-x2, -x1, 0., x1, x2]
+
+n = length(x)
+X = [ones(n)  x]
+
+a₁ = 1; a₀ = 2
+y = a₁*x .+ a₀ # model
+
+include("assets/julia/MyOptims.jl")
+A = X'*X
+println("A = ", A)
+b = -X'*y
+println("b = ", b)
+println("n= ",n)
+x0 = (n/2)*[9,1]
+println("X*x0 = ", X*x0)
+f(x) = (2/n)*(0.5*x'*A*x + b'*x + 0.5*y'*y) 
+
+println("x0 = ", x0)
+println("f(x0) = ", f(x0))
+xₖ = x0
+#p1 = plot()
+nb_levels = 7
+Xsol = zeros(nb_levels+1,2)
+Xsol[1,:] = x0
+for nbit in 1:nb_levels
+  xsol, flag, fsol, ∇f_xsol , nb_iter  = my_descent(f,x0,nbit_max=nbit)
+  println("xsol = ", xsol)
+  xₖ = xsol
+  Xsol[nbit+1,:] = xsol
+end
+```
+
+## With the Flux Package
+Find the same results with `Flux` (see <https://fluxml.ai/Flux.jl/stable/>) 
+```{julia}
+x_train = reshape(Float32.(x),1,n)
+println("x_train = ", x_train)
+y_train = reshape(Float32.(y),1,n)
+println("y_train = ", y_train)
+using Flux, Statistics
+model = Dense(1 => 1)
+model.weight[1,1]=Float32((n/2))
+model.bias[1] = Float32((n/2)*9)
+println("model.weight = ", model.weight)
+println("model.bias = ", model.bias)
+println("model(x_train) = ", model(x_train))
+loss(model, x, y) = mean(abs2.(model(x) .- y));
+println("loss(model, x_train, y_train) = ", loss(model, x_train, y_train))
+println(abs2.(model(x_train) .- y_train))
+
+opt = Descent()
+data = [(x_train, y_train)]
+println("data = ", data)
+println("n= ",n)
+#data = Flux.DataLoader((x_train, y_train), batchsize=5)
+println("data = ", first(data))
+
+XsolNN = zeros(nb_levels+1,2)
+XsolNN[1,:] = x0
+println("Flux.setup(rule, model) = ", Flux.setup(opt, model))
+dLdm, _, _ = gradient(loss, model, x_train, y_train)
+println("dLdm = ", dLdm)
+for epoch in 1:nb_levels
+    Flux.train!(loss, model, data, opt)
+    println("model.weight = ", model.weight)
+    println("model.bias = ", model.bias)
+    XsolNN[epoch+1,:] = [model.bias[1], model.weight[1,1]]
+end
+
+println("Xsol = ", Xsol)
+println("XsolNN = ", XsolNN)
+println("Xsol - XsolNN")
+display(Xsol - XsolNN)
+```
+
+## MNIST
+This example comes from the book Statistics with `julia`,
+ Yoni Nazarathy and Hayden Klol, Springer, 2021

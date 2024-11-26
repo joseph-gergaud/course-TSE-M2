@@ -1,0 +1,25 @@
+project:
+  type: website
+  output-dir: ../docs
+
+website:
+  title: "Cours"
+  sidebar:
+    style: "docked"
+    search: true
+    contents:
+      - href: index.qmd
+        text: Home
+      - PCA.qmd
+      - optimization.qmd
+      - NN.qmd
+      - least-squares-pb.qmd
+format:
+  html:
+    theme: cosmo
+    css: assets/css/styles.css
+    toc: true
+    code-fold: true
+
+
+
