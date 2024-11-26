@@ -6,6 +6,6 @@ end
 @suppress begin
     using Pkg
     Pkg.activate(".")
-    Pkg.instantiate()
+#    Pkg.instantiate()
 end
 nothing

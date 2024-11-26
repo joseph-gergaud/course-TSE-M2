@@ -72,6 +72,7 @@ end
 
 ## With the Flux Package
 Find the same results with `Flux` (see <https://fluxml.ai/Flux.jl/stable/>) 
+
 ```{julia}
 x_train = reshape(Float32.(x),1,n)
 println("x_train = ", x_train)

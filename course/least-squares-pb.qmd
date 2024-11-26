@@ -17,8 +17,9 @@ $$
 $$
 :::
 
-::: {.callout-note icon=false}
-#### Example : $C^{14} Datation
+<!-- ::: {.callout-note icon=false} -->
+
+#### Example : $C^{14}$ Datation
 Radioactive carbon $^{14}C$ is produced in the atmosphere
 by the effect of cosmic rays on atmospheric nitrogen.
 It is oxidized to $^{14}CO_{2}$ and absorbed in this form by living organisms.
@@ -33,7 +34,7 @@ $$
 A(t,A_0,\lambda)=A_{0}e^{-\lambda t}.
 $$
 
-The analysis of the trunks (wood is dead tissue) of old trees {\em Sequoia gigantea} and 
+The analysis of the trunks (wood is dead tissue) of old trees *Sequoia gigantea* and 
 {\em Pinus aristaca} furnishes us~:
 
 * its age $t$ in year
@@ -132,8 +133,6 @@ plot(p1,p2,legend=false)
 ```
 
 #### With Newton Algorithm
-
-
 
 ```{julia}
 # solve by Newton Algorithm
