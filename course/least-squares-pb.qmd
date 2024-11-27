@@ -52,7 +52,7 @@ We want to find the values of the parameters $A_0$ and $\lambda$, so that the fu
 
 $$(P) \left\{   
   \begin{array}{l}
-    \displaystyle Min\; f(\beta) = \frac{1}{2}\|r(\beta\|^2 = f(A_0,\lambda)=\frac{1}{2}\sum_{i=1}^{n}(A_i-A_0e^{-\lambda t_i})^2\\ 
+    \displaystyle Min\; f(\beta) = \frac{1}{2}\|r(\beta)\|^2 = f(A_0,\lambda)=\frac{1}{2}\sum_{i=1}^{n}(A_i-A_0e^{-\lambda t_i})^2\\ 
     \beta=(A_0,\lambda) \in  {\R}^2.
   \end{array} \right.
   $$
